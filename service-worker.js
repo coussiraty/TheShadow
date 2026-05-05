@@ -1,60 +1,27 @@
-# TheShadow
+const CACHE_NAME = "theshadow-v3";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./icons/icon-180.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
+];
 
-RPG 2D web/mobile inspirado em torre de manhwa.
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+  self.skipWaiting();
+});
 
-## Jogar
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
+    )
+  );
+  self.clients.claim();
+});
 
-Depois de publicar no GitHub Pages, o jogo deve ficar em:
-
-```text
-https://coussiraty.github.io/TheShadow/
-```
-
-## Controles PC
-
-```text
-WASD / setas      = mover
-SPACE             = dash
-clique esquerdo   = atacar / mirar
-clique direito    = dash
-P                 = poção
-L ou M            = loja
-J ou Enter        = ataque automático
-```
-
-## Controles celular
-
-```text
-Joystick = mover
-ATACAR   = atacar automaticamente
-DASH     = esquiva
-POT      = poção
-LOJA     = upgrades
-```
-
-## Sistemas já presentes
-
-- torre com andares;
-- biomas;
-- loja;
-- ouro;
-- essência sombria;
-- bosses a cada 5 andares;
-- monstros com classes;
-- sombras aliadas;
-- upgrades;
-- PWA para iPhone/Android.
-
-## Publicar no GitHub Pages
-
-No repositório:
-
-```text
-Settings
-→ Pages
-→ Build and deployment
-→ Source: Deploy from a branch
-→ Branch: main
-→ Folder: / (root)
-→ Save
-```
+self.addEventListener("fetch", event => {
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
+});
