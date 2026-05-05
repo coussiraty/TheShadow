@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Tower Manhwa RPG V3</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#050713" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Tower RPG" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <style>
+    :root {
+      --bg: #050713;
+      --panel: rgba(7, 11, 26, .84);
+      --panel2: rgba(16, 23, 50, .96);
+      --text: #f6f8ff;
+      --muted: #a8b4dc;
+      --gold: #ffd36b;
+      --red: #ff5874;
+      --blue: #69a9ff;
+      --green: #73ff9c;
+      --purple: #b78cff;
+      --line: rgba(255,255,255,.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      touch-action: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+    }
+
+    #game {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: #080d1c;
+      cursor: crosshair;
+    }
+
+    .hud {
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      left: 10px;
+      right: 10px;
+      z-index: 4;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 138px;
+      gap: 8px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 12px 38px rgba(0,0,0,.28);
+      backdrop-filter: blur(10px);
+      padding: 10px;
+    }
+
+    .topRow {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      font-weight: 950;
+      font-size: 14px;
+      margin-bottom: 4px;
+      line-height: 1.1;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .bars {
+      display: grid;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.12);
+    }
+
+    .fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width .08s linear;
+    }
+
+    #hpFill { background: linear-gradient(90deg, #ff476b, #ff996b); }
+    #manaFill { background: linear-gradient(90deg, #4be6ff, #6f8cff); }
+    #xpFill { background: linear-gradient(90deg, #ffd36b, #b78cff); }
+
+    .rightPanel {
+      text-align: right;
+      font-weight: 850;
+      font-size: 12px;
+      display: grid;
+      gap: 2px;
+      align-content: center;
+    }
+
+    .toast {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 124px;
+      z-index: 5;
+      text-align: center;
+      font-weight: 950;
+      font-size: 13px;
+      color: #fff;
+      text-shadow: 0 3px 14px rgba(0,0,0,.95);
+      pointer-events: none;
+      min-height: 22px;
+    }
+
+    .pcHint {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 5;
+      pointer-events: none;
+      font-size: 12px;
+      color: rgba(255,255,255,.72);
+      background: rgba(4,8,18,.58);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 13px;
+      padding: 8px 10px;
+      backdrop-filter: blur(8px);
+      display: none;
+    }
+
+    .controls {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: max(0px, env(safe-area-inset-bottom));
+      height: 122px;
+      z-index: 7;
+      pointer-events: none;
+    }
+
+    .joyBase {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.10), rgba(255,255,255,.04)),
+        rgba(4,8,18,.55);
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: inset 0 0 32px rgba(255,255,255,.05), 0 12px 30px rgba(0,0,0,.3);
+      backdrop-filter: blur(9px);
+      pointer-events: auto;
+    }
+
+    .joyBase::after {
+      content: "MOVER";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -18px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 950;
+      color: rgba(255,255,255,.52);
+      letter-spacing: .08em;
+    }
+
+    .joyKnob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 56px;
+      height: 56px;
+      margin-left: -28px;
+      margin-top: -28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,.94), rgba(106,169,255,.76));
+      border: 1px solid rgba(255,255,255,.45);
+      box-shadow: 0 10px 26px rgba(0,0,0,.32);
+      transform: translate(0,0);
+    }
+
+    .actions {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      display: grid;
+      grid-template-columns: 58px 58px 86px;
+      grid-template-rows: 42px 42px;
+      gap: 8px;
+      pointer-events: auto;
+      align-items: end;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .action {
+      border: 1px solid rgba(255,255,255,.17);
+      color: #fff;
+      border-radius: 999px;
+      font-weight: 1000;
+      box-shadow: 0 12px 30px rgba(0,0,0,.34);
+      backdrop-filter: blur(10px);
+      text-shadow: 0 1px 4px rgba(0,0,0,.45);
+    }
+
+    .action:active {
+      transform: scale(.96);
+      filter: brightness(1.18);
+    }
+
+    #attackBtn {
+      grid-row: 1 / span 2;
+      grid-column: 3;
+      width: 86px;
+      height: 86px;
+      background: radial-gradient(circle at 35% 25%, #ffb2bd, #f2365d 58%, #8f112b);
+      font-size: 14px;
+    }
+
+    #dashBtn {
+      grid-column: 2;
+      grid-row: 2;
+      background: radial-gradient(circle at 35% 25%, #bff5ff, #3275f0 62%, #142e78);
+      font-size: 11px;
+    }
+
+    #potionBtn {
+      grid-column: 1;
+      grid-row: 2;
+      background: radial-gradient(circle at 35% 25%, #beffcd, #24b65b 62%, #0d5f2d);
+      font-size: 11px;
+    }
+
+    #shopBtn {
+      grid-column: 1 / span 2;
+      grid-row: 1;
+      background: radial-gradient(circle at 35% 25%, #ffeab0, #d99322 62%, #74420c);
+      font-size: 12px;
+    }
+
+    .start, .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(112, 101, 255, .25), transparent 35%),
+        rgba(2, 4, 12, .88);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal {
+      display: none;
+      z-index: 22;
+    }
+
+    .card {
+      width: min(610px, 100%);
+      max-height: min(88vh, 780px);
+      overflow: auto;
+      background: var(--panel2);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 24px;
+      box-shadow: 0 28px 90px rgba(0,0,0,.52);
+      padding: 18px;
+      text-align: center;
+    }
+
+    .card h1, .card h2 {
+      margin: 0 0 8px;
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+
+    .card h1 { font-size: 29px; }
+    .card h2 { font-size: 23px; }
+
+    .card p {
+      color: var(--muted);
+      margin: 8px 0;
+      line-height: 1.35;
+    }
+
+    .primary, .secondary {
+      border: 0;
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-weight: 1000;
+      width: 100%;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
+    .primary {
+      color: #16110a;
+      background: linear-gradient(135deg, #ffd36b, #ff926b);
+      box-shadow: 0 12px 30px rgba(255,146,107,.25);
+    }
+
+    .secondary {
+      color: #fff;
+      background: rgba(255,255,255,.09);
+      border: 1px solid rgba(255,255,255,.13);
+    }
+
+    .shopGrid, .choiceGrid {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+      text-align: left;
+    }
+
+    .shopItem, .choiceItem {
+      border: 1px solid rgba(255,255,255,.13);
+      background: rgba(255,255,255,.055);
+      color: white;
+      border-radius: 16px;
+      padding: 11px;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+    }
+
+    .shopItem b, .choiceItem b {
+      color: var(--gold);
+      font-size: 14px;
+    }
+
+    .shopItem span, .choiceItem span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .shopItem em {
+      font-style: normal;
+      color: #fff;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .shopItem[disabled], .choiceItem[disabled] {
+      opacity: .45;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .hintBox {
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 10px;
+      text-align: left;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    @media (min-width: 820px) {
+      .hud {
+        max-width: 790px;
+        left: 16px;
+        right: auto;
+        width: 790px;
+      }
+
+      .controls {
+        display: none;
+      }
+
+      .pcHint {
+        display: block;
+      }
+
+      .toast {
+        bottom: 24px;
+        left: 220px;
+        right: 220px;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .hud {
+        grid-template-columns: 1fr 112px;
+      }
+
+      .actions {
+        grid-template-columns: 52px 52px 78px;
+        gap: 7px;
+      }
+
+      #attackBtn {
+        width: 78px;
+        height: 78px;
+        font-size: 13px;
+      }
+
+      .joyBase {
+        width: 98px;
+        height: 98px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div class="hud">
+    <div class="panel">
+      <div class="topRow">
+        <div id="heroLabel">Caçador Rank E</div>
+        <div id="floorLabel">Andar 1</div>
+      </div>
+      <div class="small" id="biomeLabel">Bioma: Floresta desperta</div>
+      <div class="bars">
+        <div class="bar"><div class="fill" id="hpFill"></div></div>
+        <div class="bar"><div class="fill" id="manaFill"></div></div>
+        <div class="bar"><div class="fill" id="xpFill"></div></div>
+      </div>
+    </div>
+    <div class="panel rightPanel">
+      <div id="levelLabel">Lv. 1</div>
+      <div id="goldLabel">0 ouro</div>
+      <div id="essenceLabel">0 essência</div>
+      <div id="enemyLabel">0 inimigos</div>
+      <div id="statLabel">ATK 0</div>
+    </div>
+  </div>
+
+  <div class="pcHint">
+    PC: WASD/setas movem · <b>SPACE = dash</b> · <b>clique esquerdo = atacar</b> · botão direito = dash · P poção · L loja
+  </div>
+
+  <div class="toast" id="toast">Entre na torre.</div>
+
+  <div class="controls">
+    <div class="joyBase" id="joyBase">
+      <div class="joyKnob" id="joyKnob"></div>
+    </div>
+
+    <div class="actions">
+      <button class="action" id="shopBtn">LOJA</button>
+      <button class="action" id="potionBtn">POT</button>
+      <button class="action" id="dashBtn">DASH</button>
+      <button class="action" id="attackBtn">ATACAR</button>
+    </div>
+  </div>
+
+  <div class="start" id="startScreen">
+    <div class="card">
+      <h1>🏯 Tower Manhwa RPG V3</h1>
+      <p>Versão PC + mobile: joystick no celular, mouse no PC, monstros com classes, bosses com habilidades e exército de sombras.</p>
+      <div class="hintBox">
+        <b>PC:</b> WASD/setas para mover, <b>SPACE para dash</b>, <b>clique esquerdo para atacar/mirar</b>, botão direito para dash, P para poção, L para loja.<br><br>
+        <b>Celular:</b> joystick para mover, botões de atacar/dash/poção/loja. O ataque mira automaticamente no inimigo mais próximo.
+      </div>
+      <button class="primary" id="startBtn">Entrar na Torre</button>
+    </div>
+  </div>
+
+  <div class="modal" id="shopModal">
+    <div class="card">
+      <h2>🛒 Loja do Mercador</h2>
+      <p id="shopInfo">Compre upgrades usando ouro e essência.</p>
+      <div class="shopGrid" id="shopGrid"></div>
+      <div class="row">
+        <button class="secondary" id="closeShopBtn">Fechar</button>
+        <button class="primary" id="nextFloorBtn">Subir Andar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="blessingModal">
+    <div class="card">
+      <h2>✨ Bênção da Torre</h2>
+      <p>Escolha um poder permanente para continuar a subida.</p>
+      <div class="choiceGrid" id="choiceGrid"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const W = 960;
+  const H = 540;
+  const DPR_MAX = 2;
+
+  let dpr = 1;
+  let scale = 1;
+  let ox = 0;
+  let oy = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + "px";
+    canvas.style.height = innerHeight + "px";
+    scale = Math.min(canvas.width / W, canvas.height / H);
+    ox = (canvas.width - W * scale) / 2;
+    oy = (canvas.height - H * scale) / 2;
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  const ui = {
+    hpFill: document.getElementById("hpFill"),
+    manaFill: document.getElementById("manaFill"),
+    xpFill: document.getElementById("xpFill"),
+    heroLabel: document.getElementById("heroLabel"),
+    floorLabel: document.getElementById("floorLabel"),
+    biomeLabel: document.getElementById("biomeLabel"),
+    levelLabel: document.getElementById("levelLabel"),
+    goldLabel: document.getElementById("goldLabel"),
+    essenceLabel: document.getElementById("essenceLabel"),
+    enemyLabel: document.getElementById("enemyLabel"),
+    statLabel: document.getElementById("statLabel"),
+    toast: document.getElementById("toast"),
+    startScreen: document.getElementById("startScreen"),
+    shopModal: document.getElementById("shopModal"),
+    shopGrid: document.getElementById("shopGrid"),
+    shopInfo: document.getElementById("shopInfo"),
+    blessingModal: document.getElementById("blessingModal"),
+    choiceGrid: document.getElementById("choiceGrid"),
+    attackBtn: document.getElementById("attackBtn"),
+    dashBtn: document.getElementById("dashBtn"),
+    potionBtn: document.getElementById("potionBtn"),
+    shopBtn: document.getElementById("shopBtn"),
+    nextFloorBtn: document.getElementById("nextFloorBtn")
+  };
+
+  const biomes = [
+    { name:"Floresta desperta", icon:"🌲", bg1:"#163b2b", bg2:"#071510", floor:"#245338", grid:"rgba(151,255,169,.10)", enemy:"#71ff96", boss:"#ddff72", deco:"tree" },
+    { name:"Deserto do Rei Demônio", icon:"🏜️", bg1:"#735020", bg2:"#241608", floor:"#825c2a", grid:"rgba(255,214,133,.13)", enemy:"#ffc46a", boss:"#ff765f", deco:"rock" },
+    { name:"Ruínas de gelo", icon:"❄️", bg1:"#194b68", bg2:"#061420", floor:"#214a64", grid:"rgba(151,232,255,.15)", enemy:"#9deaff", boss:"#e8f5ff", deco:"ice" },
+    { name:"Vulcão abissal", icon:"🔥", bg1:"#5e1520", bg2:"#150407", floor:"#3c1119", grid:"rgba(255,88,116,.14)", enemy:"#ff5874", boss:"#ffc252", deco:"lava" },
+    { name:"Céu quebrado", icon:"🌌", bg1:"#21185a", bg2:"#040612", floor:"#1b1644", grid:"rgba(181,140,255,.14)", enemy:"#b78cff", boss:"#ffffff", deco:"star" }
+  ];
+
+  const bossNames = [
+    "Guardião das Raízes",
+    "Faraó da Areia Negra",
+    "Yeti Rúnico",
+    "Dragão Abissal",
+    "Serafim Caído"
+  ];
+
+  const keys = {};
+  const joy = { x:0, y:0, mag:0 };
+  const mouse = { x: W/2, y: H/2, inside:false, down:false };
+
+  let running = false;
+  let paused = false;
+  let safe = false;
+  let last = 0;
+  let shake = 0;
+  let messageTimer = 0;
+  let slash = null;
+
+  let enemies = [];
+  let projectiles = [];
+  let particles = [];
+  let pickups = [];
+  let shadows = [];
+  let zones = [];
+  let decor = [];
+  let portal = null;
+  let merchant = null;
+
+  const player = {
+    x: W/2,
+    y: H/2,
+    r: 15,
+    hp: 135,
+    maxHp: 135,
+    mana: 65,
+    maxMana: 65,
+    xp: 0,
+    nextXp: 75,
+    level: 1,
+    rank: "E",
+    atk: 20,
+    armor: 1,
+    speed: 222,
+    gold: 0,
+    essence: 0,
+    floor: 1,
+    potion: 2,
+    crit: .10,
+    lifesteal: .02,
+    attackRange: 138,
+    slashRange: 340,
+    attackCd: 0,
+    dashCd: 0,
+    potionCd: 0,
+    invuln: 0,
+    slow: 0,
+    facingX: 1,
+    facingY: 0,
+    shadowSlots: 2,
+    shadowDmg: .45,
+    shadowRaiseChance: .30,
+    shadowUnlocked: true,
+    shadowAutoCost: 5,
+    aura: 0,
+    bestFloor: 1
+  };
+
+  const shopItems = [
+    {
+      id:"potion",
+      name:"Poção de Cura",
+      desc:"Ganha +1 poção. Cura 45% da vida máxima.",
+      cost: () => 26 + player.floor * 3,
+      essence: () => 0,
+      buy: () => player.potion += 1
+    },
+    {
+      id:"atk",
+      name:"Afiar Lâmina",
+      desc:"+6 de ataque. Melhora golpe e corte de mana.",
+      cost: () => 76 + Math.floor(player.atk * 3.4),
+      essence: () => 0,
+      buy: () => player.atk += 6
+    },
+    {
+      id:"armor",
+      name:"Armadura Sombria",
+      desc:"+2 de armadura. Reduz dano recebido.",
+      cost: () => 72 + player.armor * 42,
+      essence: () => 0,
+      buy: () => player.armor += 2
+    },
+    {
+      id:"boots",
+      name:"Botas do Vento",
+      desc:"+15 de velocidade. Movimento mais leve no PC e celular.",
+      cost: () => 95 + Math.floor(player.speed * .35),
+      essence: () => 0,
+      buy: () => player.speed += 15
+    },
+    {
+      id:"life",
+      name:"Núcleo Vital",
+      desc:"+28 de vida máxima e cura 28.",
+      cost: () => 92 + Math.floor(player.maxHp * .48),
+      essence: () => 0,
+      buy: () => { player.maxHp += 28; player.hp = Math.min(player.maxHp, player.hp + 28); }
+    },
+    {
+      id:"mana",
+      name:"Cristal de Mana",
+      desc:"+22 de mana máxima e recarrega a mana.",
+      cost: () => 76 + Math.floor(player.maxMana * .48),
+      essence: () => 0,
+      buy: () => { player.maxMana += 22; player.mana = player.maxMana; }
+    },
+    {
+      id:"range",
+      name:"Alcance do Corte",
+      desc:"+18 alcance no golpe e +24 no corte de mana.",
+      cost: () => 130 + Math.floor(player.attackRange * .72),
+      essence: () => 0,
+      buy: () => { player.attackRange += 18; player.slashRange += 24; }
+    },
+    {
+      id:"slot",
+      name:"Slot de Sombra",
+      desc:"+1 espaço no exército de sombras.",
+      cost: () => 155 + player.shadowSlots * 80,
+      essence: () => 8 + player.shadowSlots * 4,
+      buy: () => { player.shadowSlots += 1; tryRaiseShadow(player.x, player.y, "soldier", true); }
+    },
+    {
+      id:"shadowDmg",
+      name:"Treinar Sombras",
+      desc:"+15% de dano para todas as sombras.",
+      cost: () => 135 + Math.floor(player.shadowDmg * 180),
+      essence: () => 6,
+      buy: () => player.shadowDmg += .15
+    },
+    {
+      id:"necromancy",
+      name:"Necromancia Avançada",
+      desc:"+12% de chance de erguer sombra ao matar monstro.",
+      cost: () => 180 + Math.floor(player.shadowRaiseChance * 250),
+      essence: () => 10,
+      buy: () => player.shadowRaiseChance = Math.min(.85, player.shadowRaiseChance + .12)
+    }
+  ];
+
+  const blessingPool = [
+    { name:"Sangue de Monarca", desc:"+8% de roubo de vida.", apply: () => player.lifesteal += .08 },
+    { name:"Instinto Assassino", desc:"+12% de crítico.", apply: () => player.crit += .12 },
+    { name:"Passo Relâmpago", desc:"Dash recarrega mais rápido e +25 velocidade.", apply: () => player.speed += 25 },
+    { name:"Lâmina de Caçador", desc:"+14 de ataque.", apply: () => player.atk += 14 },
+    { name:"Pele de Dragão", desc:"+5 de armadura.", apply: () => player.armor += 5 },
+    { name:"Recuperação Completa", desc:"Cura totalmente e dá +1 poção.", apply: () => { player.hp = player.maxHp; player.potion += 1; } },
+    { name:"Exército de Sombras", desc:"+1 slot de sombra e invoca uma sombra nova.", apply: () => { player.shadowSlots += 1; tryRaiseShadow(player.x, player.y, "random", true); } },
+    { name:"Contrato do Monarca", desc:"+20% dano das sombras e +6 essência.", apply: () => { player.shadowDmg += .20; player.essence += 6; } },
+    { name:"Corte Dimensional", desc:"+42 alcance do corte de mana.", apply: () => player.slashRange += 42 }
+  ];
+
+  function biome() {
+    return biomes[Math.min(biomes.length - 1, Math.floor((player.floor - 1) / 5))];
+  }
+
+  function rank() {
+    if (player.level >= 20) return "S";
+    if (player.level >= 15) return "A";
+    if (player.level >= 10) return "B";
+    if (player.level >= 6) return "C";
+    if (player.level >= 3) return "D";
+    return "E";
+  }
+
+  function setMessage(text, seconds = 2.1) {
+    ui.toast.textContent = text;
+    messageTimer = seconds;
+  }
+
+  function resetRun() {
+    paused = false;
+    safe = false;
+    player.x = W/2;
+    player.y = H/2;
+    player.hp = 135;
+    player.maxHp = 135;
+    player.mana = 65;
+    player.maxMana = 65;
+    player.xp = 0;
+    player.nextXp = 75;
+    player.level = 1;
+    player.rank = "E";
+    player.atk = 20;
+    player.armor = 1;
+    player.speed = 222;
+    player.gold = 0;
+    player.essence = 0;
+    player.floor = 1;
+    player.potion = 2;
+    player.crit = .10;
+    player.lifesteal = .02;
+    player.attackRange = 138;
+    player.slashRange = 340;
+    player.attackCd = 0;
+    player.dashCd = 0;
+    player.potionCd = 0;
+    player.invuln = 0;
+    player.slow = 0;
+    player.facingX = 1;
+    player.facingY = 0;
+    player.shadowSlots = 2;
+    player.shadowDmg = .45;
+    player.shadowRaiseChance = .30;
+    player.shadowUnlocked = true;
+    enemies = [];
+    projectiles = [];
+    particles = [];
+    pickups = [];
+    shadows = [];
+    zones = [];
+    portal = null;
+    merchant = null;
+    generateDecor();
+    tryRaiseShadow(player.x - 28, player.y + 22, "soldier", true);
+    tryRaiseShadow(player.x + 28, player.y + 22, "archer", true);
+    spawnFloor();
+    setMessage("V3: SPACE dá dash, mouse ataca, sombras já te seguem.");
+  }
+
+  function generateDecor() {
+    decor = [];
+    const b = biome();
+    for (let i = 0; i < 28; i++) {
+      decor.push({
+        x: 60 + Math.random() * (W - 120),
+        y: 68 + Math.random() * (H - 130),
+        r: 5 + Math.random() * 16,
+        t: b.deco,
+        a: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  function spawnFloor() {
+    safe = false;
+    portal = null;
+    merchant = null;
+    projectiles = [];
+    zones = [];
+    pickups = [];
+    enemies = [];
+    generateDecor();
+
+    const bossFloor = player.floor % 5 === 0;
+    const count = bossFloor ? 1 : Math.min(11, 4 + Math.floor(player.floor * .78));
+
+    if (bossFloor) {
+      spawnBoss();
+      const adds = Math.min(4, Math.floor(player.floor / 4));
+      for (let i = 0; i < adds; i++) spawnEnemy("random");
+      setMessage("⚠️ Boss do bioma apareceu. SPACE/dash salva vida.");
+    } else {
+      for (let i = 0; i < count; i++) spawnEnemy("random");
+      setMessage(`Andar ${player.floor}: clique para atacar e junte essência sombria.`);
+    }
+  }
+
+  function spawnBoss() {
+    const b = biome();
+    const idx = Math.min(bossNames.length - 1, Math.floor((player.floor - 1) / 5));
+    const scaleFloor = 1 + player.floor * .105;
+    const p = spawnPointFar(240);
+
+    enemies.push({
+      x: p.x, y: p.y,
+      r: 42,
+      hp: Math.round(330 * scaleFloor),
+      maxHp: Math.round(330 * scaleFloor),
+      atk: Math.round(23 * scaleFloor),
+      speed: 76 + Math.min(44, player.floor * 1.7),
+      color: b.boss,
+      type: "boss",
+      isBoss: true,
+      isElite: true,
+      name: bossNames[idx],
+      shootCd: .7,
+      dashCd: 2.1,
+      summonCd: 2.8,
+      aoeCd: 3.2,
+      hit: 0
+    });
+  }
+
+  function spawnEnemy(kind = "random", nearX = null, nearY = null) {
+    const b = biome();
+    const floorScale = 1 + player.floor * .085;
+    const types = availableTypes();
+    let type = kind === "random" ? weightedPick(types) : kind;
+
+    let elite = false;
+    if (type !== "minion" && type !== "boss" && player.floor >= 3) {
+      elite = Math.random() < Math.min(.28, .08 + player.floor * .008);
+    }
+
+    const stats = enemyStats(type, b, floorScale, elite);
+    const p = nearX == null ? spawnPointFar(190) : { x: nearX + rand(-42, 42), y: nearY + rand(-42, 42) };
+
+    enemies.push({
+      x: clamp(p.x, 55, W - 55),
+      y: clamp(p.y, 64, H - 45),
+      r: stats.r,
+      hp: stats.hp,
+      maxHp: stats.hp,
+      atk: stats.atk,
+      speed: stats.speed,
+      color: stats.color,
+      type,
+      isBoss: false,
+      isElite: elite,
+      name: stats.name,
+      shootCd: .4 + Math.random() * 1.1,
+      dashCd: .8 + Math.random() * 1.6,
+      summonCd: 1.6 + Math.random() * 2.8,
+      aoeCd: 1.8 + Math.random() * 2.2,
+      attackTouchCd: 0,
+      hit: 0,
+      angry: 0
+    });
+  }
+
+  function availableTypes() {
+    const list = [
+      { type:"wolf", w:34 },
+      { type:"archer", w:16 },
+      { type:"brute", w:13 },
+      { type:"exploder", w:7 }
+    ];
+    if (player.floor >= 3) list.push({ type:"assassin", w:12 });
+    if (player.floor >= 4) list.push({ type:"mage", w:12 });
+    if (player.floor >= 6) list.push({ type:"necro", w:8 });
+    return list;
+  }
+
+  function enemyStats(type, b, scaleFloor, elite) {
+    const base = {
+      wolf:     { r:18, hp:48, atk:10, speed:132, color:b.enemy, name:"Fera da Torre" },
+      archer:   { r:16, hp:38, atk:9,  speed:94,  color:"#f6e36b", name:"Atirador Espectral" },
+      brute:    { r:25, hp:92, atk:15, speed:76,  color:"#ff9a6b", name:"Bruto de Pedra" },
+      assassin: { r:16, hp:42, atk:14, speed:148, color:"#e2e5ff", name:"Assassino de Névoa" },
+      mage:     { r:18, hp:46, atk:12, speed:82,  color:"#8cf4ff", name:"Mago Rúnico" },
+      necro:    { r:19, hp:62, atk:9,  speed:72,  color:"#b78cff", name:"Invocador Sombrio" },
+      exploder: { r:17, hp:36, atk:18, speed:118, color:"#ff5874", name:"Parasita Instável" },
+      minion:   { r:14, hp:24, atk:7,  speed:118, color:"#9c6bff", name:"Servo Invocado" }
+    }[type] || { r:18, hp:45, atk:10, speed:110, color:b.enemy, name:"Monstro" };
+
+    let hp = Math.round(base.hp * scaleFloor);
+    let atk = Math.round(base.atk * scaleFloor);
+    let r = base.r;
+    let speed = base.speed + Math.min(58, player.floor * 2.2);
+    let name = base.name;
+    let color = base.color;
+
+    if (elite) {
+      hp = Math.round(hp * 1.75);
+      atk = Math.round(atk * 1.33);
+      r += 5;
+      speed += 8;
+      name = "Elite " + name;
+      color = "#ffd36b";
+    }
+
+    return { r, hp, atk, speed, color, name };
+  }
+
+  function spawnPointFar(minD) {
+    let x, y, tries = 0;
+    do {
+      x = 68 + Math.random() * (W - 136);
+      y = 74 + Math.random() * (H - 150);
+      tries++;
+    } while (dist(x, y, player.x, player.y) < minD && tries < 80);
+    return { x, y };
+  }
+
+  function weightedPick(list) {
+    const total = list.reduce((s, x) => s + x.w, 0);
+    let r = Math.random() * total;
+    for (const item of list) {
+      r -= item.w;
+      if (r <= 0) return item.type;
+    }
+    return list[0].type;
+  }
+
+  function clearFloor() {
+    if (safe) return;
+    safe = true;
+    portal = { x: W/2, y: 82, r: 31, pulse: 0 };
+    merchant = { x: W - 108, y: H - 92, r: 23, pulse: 0 };
+    const bonus = 20 + player.floor * 3;
+    player.gold += bonus;
+    player.essence += player.floor % 5 === 0 ? 5 : 2;
+    setMessage(`Andar limpo! +${bonus} ouro. LOJA ou portal para subir.`);
+  }
+
+  function nextFloor() {
+    ui.shopModal.style.display = "none";
+    ui.blessingModal.style.display = "none";
+    paused = false;
+    player.floor += 1;
+    player.bestFloor = Math.max(player.bestFloor, player.floor);
+    try {
+      localStorage.setItem("towerBestFloorV3", String(player.bestFloor));
+    } catch (e) {}
+    player.x = W/2;
+    player.y = H - 92;
+    player.hp = Math.min(player.maxHp, player.hp + 18);
+    player.mana = Math.min(player.maxMana, player.mana + 34);
+    for (const s of shadows) {
+      s.x = player.x + rand(-38, 38);
+      s.y = player.y + rand(-22, 22);
+      s.attackCd = Math.min(s.attackCd, .4);
+    }
+    spawnFloor();
+  }
+
+  function enterPortal() {
+    if (!safe || paused) return;
+    if (player.floor % 3 === 0 || player.floor % 5 === 0) openBlessing();
+    else nextFloor();
+  }
+
+  function gainXp(amount) {
+    player.xp += amount;
+    while (player.xp >= player.nextXp) {
+      player.xp -= player.nextXp;
+      player.level += 1;
+      player.nextXp = Math.round(player.nextXp * 1.30 + 25);
+      player.maxHp += 13;
+      player.hp = Math.min(player.maxHp, player.hp + 35);
+      player.maxMana += 6;
+      player.mana = player.maxMana;
+      player.atk += 4;
+      player.rank = rank();
+      player.gold += 18;
+      burst(player.x, player.y, "#ffd36b", 30);
+      setMessage(`Level up! Lv. ${player.level}, Rank ${player.rank}.`);
+    }
+  }
+
+  function nearestEnemy(max = Infinity) {
+    let best = null;
+    let bd = max;
+    for (const e of enemies) {
+      const d = dist(player.x, player.y, e.x, e.y);
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+
+  function nearestEnemyToPoint(x, y, max = 95) {
+    let best = null;
+    let bd = max;
+    for (const e of enemies) {
+      const d = dist(x, y, e.x, e.y);
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+
+  function enemyInDirection(dx, dy, maxDist, cone) {
+    let best = null;
+    let bd = maxDist;
+    for (const e of enemies) {
+      const ex = e.x - player.x;
+      const ey = e.y - player.y;
+      const d = Math.hypot(ex, ey);
+      if (d > maxDist || d < 1) continue;
+      const dot = (ex / d) * dx + (ey / d) * dy;
+      if (dot > cone && d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+
+  function attackAt(tx = null, ty = null) {
+    if (!running || paused || player.attackCd > 0) return;
+
+    player.attackCd = .23;
+
+    let dx = player.facingX;
+    let dy = player.facingY;
+    let target = null;
+
+    if (tx != null && ty != null) {
+      dx = tx - player.x;
+      dy = ty - player.y;
+      const len = Math.max(1, Math.hypot(dx, dy));
+      dx /= len;
+      dy /= len;
+      target = nearestEnemyToPoint(tx, ty, 115) || enemyInDirection(dx, dy, player.slashRange, .70);
+    } else {
+      target = nearestEnemy(player.slashRange);
+      if (target) {
+        const d = Math.max(1, dist(player.x, player.y, target.x, target.y));
+        dx = (target.x - player.x) / d;
+        dy = (target.y - player.y) / d;
+      }
+    }
+
+    player.facingX = dx;
+    player.facingY = dy;
+
+    const slashX = player.x + dx * 54;
+    const slashY = player.y + dy * 54;
+    slash = { x: slashX, y: slashY, dx, dy, life: .13, max:.13 };
+
+    const direct = target && dist(player.x, player.y, target.x, target.y) <= player.attackRange + target.r;
+    if (direct) {
+      hitEnemy(target, player.atk + randInt(0, 9), dx, dy, true);
+      shake = Math.max(shake, 5);
+      setMessage("Golpe acertou!", .5);
+      return;
+    }
+
+    const cost = 4;
+    if (player.mana >= cost) {
+      player.mana -= cost;
+      const speed = 565;
+      projectiles.push({
+        owner: "player",
+        x: player.x + dx * 25,
+        y: player.y + dy * 25,
+        vx: dx * speed,
+        vy: dy * speed,
+        r: 12,
+        dmg: Math.round(player.atk * .82),
+        life: .62,
+        pierce: 1,
+        color: "#dce8ff",
+        kind: "slash"
+      });
+      setMessage("Corte de mana!", .45);
+    } else {
+      setMessage("Sem mana para corte distante.", .75);
+    }
+  }
+
+  function hitEnemy(e, dmg, dx, dy, canCrit = true) {
+    if (!e || e.hp <= 0) return;
+    const crit = canCrit && Math.random() < player.crit;
+    if (crit) dmg = Math.round(dmg * 1.95);
+
+    e.hp -= dmg;
+    e.hit = .16;
+    e.angry = Math.max(e.angry || 0, .65);
+    e.x = clamp(e.x + dx * (e.isBoss ? 6 : 15), 45, W - 45);
+    e.y = clamp(e.y + dy * (e.isBoss ? 6 : 15), 55, H - 42);
+
+    if (player.lifesteal > 0) {
+      player.hp = Math.min(player.maxHp, player.hp + Math.max(1, Math.round(dmg * player.lifesteal)));
+    }
+
+    floatingText(e.x, e.y - e.r - 10, crit ? `CRIT ${dmg}` : `${dmg}`, crit ? "#ffd36b" : "#fff");
+    burst(e.x, e.y, crit ? "#ffd36b" : e.color, crit ? 18 : 9);
+    cleanupDead();
+  }
+
+  function cleanupDead() {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      if (e.hp <= 0) {
+        const gold = e.isBoss ? 115 + player.floor * 15 : 17 + player.floor * 3 + randInt(0, 8) + (e.isElite ? 18 : 0);
+        const essence = e.isBoss ? 12 : (e.isElite ? 4 : 1);
+        player.gold += gold;
+        player.essence += essence;
+        gainXp(e.isBoss ? 155 + player.floor * 18 : 42 + player.floor * 7 + (e.isElite ? 25 : 0));
+        floatingText(e.x, e.y - 10, `+${gold}g +${essence}e`, "#ffd36b");
+        burst(e.x, e.y, e.color, e.isBoss ? 46 : 22);
+        maybeRaiseShadowFromEnemy(e);
+
+        if (!e.isBoss && Math.random() < .11) {
+          pickups.push({ x:e.x, y:e.y, r:10, type:"potion", life:8, pulse:0 });
+        }
+
+        if (e.type === "exploder") createZone(e.x, e.y, 62, 0, "#ff5874", .35, "boom", e.atk);
+
+        enemies.splice(i, 1);
+      }
+    }
+
+    if (enemies.length === 0 && !safe) clearFloor();
+  }
+
+  function maybeRaiseShadowFromEnemy(e) {
+    if (!player.shadowUnlocked || shadows.length >= player.shadowSlots) return;
+
+    let type = "soldier";
+    if (e.type === "archer") type = "archer";
+    else if (e.type === "mage" || e.type === "necro") type = "mage";
+    else if (e.type === "brute" || e.type === "boss") type = "guardian";
+    else if (e.type === "assassin") type = "assassin";
+    else if (Math.random() < .25) type = "archer";
+
+    if (e.isBoss || Math.random() < player.shadowRaiseChance || player.essence >= player.shadowAutoCost) {
+      if (!e.isBoss && player.essence >= player.shadowAutoCost) player.essence -= player.shadowAutoCost;
+      tryRaiseShadow(e.x, e.y, type, true);
+    }
+  }
+
+  function tryRaiseShadow(x, y, type = "random", free = false) {
+    if (shadows.length >= player.shadowSlots) return false;
+    if (!free && player.essence < player.shadowAutoCost) return false;
+    if (!free) player.essence -= player.shadowAutoCost;
+
+    const types = ["soldier", "archer", "mage", "guardian", "assassin"];
+    const t = type === "random" ? types[randInt(0, types.length - 1)] : type;
+    const names = {
+      soldier: "Sombra Soldado",
+      archer: "Sombra Arqueira",
+      mage: "Sombra Maga",
+      guardian: "Sombra Guardiã",
+      assassin: "Sombra Assassina"
+    };
+
+    shadows.push({
+      x: x + rand(-10, 10),
+      y: y + rand(-10, 10),
+      r: t === "guardian" ? 15 : 12,
+      type: t,
+      name: names[t],
+      attackCd: .2 + Math.random() * .6,
+      angle: Math.random() * Math.PI * 2,
+      pulse: 0,
+      color: t === "guardian" ? "#d2b8ff" : "#b78cff"
+    });
+    burst(x, y, "#b78cff", 24);
+    floatingText(x, y - 24, "Sombra erguida", "#b78cff");
+    setMessage(`${names[t]} entrou no exército.`, 1.4);
+    return true;
+  }
+
+  function dash() {
+    if (!running || paused || player.dashCd > 0 || player.mana < 10) return;
+
+    let v = inputVector();
+    let dx = v.x;
+    let dy = v.y;
+
+    if (v.mag < .12) {
+      if (mouse.inside) {
+        dx = mouse.x - player.x;
+        dy = mouse.y - player.y;
+        const len = Math.max(1, Math.hypot(dx, dy));
+        dx /= len;
+        dy /= len;
+      } else {
+        dx = player.facingX;
+        dy = player.facingY;
+      }
+    }
+
+    player.x = clamp(player.x + dx * 122, 32, W - 32);
+    player.y = clamp(player.y + dy * 122, 44, H - 34);
+    player.facingX = dx;
+    player.facingY = dy;
+    player.mana -= 10;
+    player.dashCd = .82;
+    player.invuln = .34;
+    burst(player.x, player.y, "#69a9ff", 20);
+    for (const s of shadows) {
+      s.x += dx * 58;
+      s.y += dy * 58;
+      burst(s.x, s.y, "#b78cff", 5);
+    }
+  }
+
+  function usePotion() {
+    if (!running || paused || player.potionCd > 0) return;
+    if (player.potion <= 0) {
+      setMessage("Sem poções. Compre na loja.", .9);
+      return;
+    }
+    if (player.hp >= player.maxHp) {
+      setMessage("Vida já está cheia.", .8);
+      return;
+    }
+
+    player.potion -= 1;
+    player.potionCd = .55;
+    const heal = Math.round(player.maxHp * .45);
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    burst(player.x, player.y, "#73ff9c", 20);
+    floatingText(player.x, player.y - 24, `+${heal}`, "#73ff9c");
+    setMessage("Poção usada.", .75);
+  }
+
+  function hurtPlayer(dmg, extra = null) {
+    if (player.invuln > 0 || paused) return;
+
+    dmg = Math.max(1, Math.round(dmg - player.armor));
+    player.hp -= dmg;
+    player.invuln = .45;
+    shake = Math.max(shake, 9);
+    burst(player.x, player.y, "#ff5874", 14);
+    floatingText(player.x, player.y - 24, `-${dmg}`, "#ff5874");
+
+    if (extra === "slow") {
+      player.slow = Math.max(player.slow, 1.15);
+      setMessage("Você foi desacelerado!", .9);
+    }
+
+    if (player.hp <= 0) {
+      player.bestFloor = Math.max(player.bestFloor, player.floor);
+      try {
+        localStorage.setItem("towerBestFloorV3", String(player.bestFloor));
+      } catch (e) {}
+      setMessage("Você caiu na torre... a run reiniciou.", 1.4);
+      resetRun();
+    }
+  }
+
+  function updatePlayer(dt) {
+    player.attackCd = Math.max(0, player.attackCd - dt);
+    player.dashCd = Math.max(0, player.dashCd - dt);
+    player.potionCd = Math.max(0, player.potionCd - dt);
+    player.invuln = Math.max(0, player.invuln - dt);
+    player.slow = Math.max(0, player.slow - dt);
+    player.mana = Math.min(player.maxMana, player.mana + 11 * dt);
+    player.aura += dt;
+
+    const v = inputVector();
+    if (v.mag > .03) {
+      const slowMult = player.slow > 0 ? .58 : 1;
+      const speed = player.speed * slowMult * (.35 + .65 * v.mag);
+      player.x += v.x * speed * dt;
+      player.y += v.y * speed * dt;
+      player.facingX = v.x;
+      player.facingY = v.y;
+    }
+
+    player.x = clamp(player.x, 30, W - 30);
+    player.y = clamp(player.y, 42, H - 30);
+
+    if (safe && portal && dist(player.x, player.y, portal.x, portal.y) < player.r + portal.r) enterPortal();
+    if (safe && merchant && dist(player.x, player.y, merchant.x, merchant.y) < player.r + merchant.r + 8) {
+      setMessage("Mercador: toque em LOJA ou pressione L.", .5);
+    }
+  }
+
+  function updateShadows(dt) {
+    const activeEnemies = enemies.length > 0;
+
+    for (let i = 0; i < shadows.length; i++) {
+      const s = shadows[i];
+      s.pulse += dt;
+      s.attackCd -= dt;
+
+      const angle = (Math.PI * 2 / Math.max(1, shadows.length)) * i + player.aura * .65;
+      const orbit = 48 + (i % 2) * 16;
+      let target = nearestEnemyFrom(s.x, s.y, s.type === "archer" || s.type === "mage" ? 410 : 180);
+
+      let tx = player.x + Math.cos(angle) * orbit;
+      let ty = player.y + Math.sin(angle) * orbit;
+
+      if (target && (s.type === "soldier" || s.type === "assassin" || s.type === "guardian")) {
+        const d = Math.max(1, dist(s.x, s.y, target.x, target.y));
+        tx = target.x - (target.x - s.x) / d * (s.r + target.r + 14);
+        ty = target.y - (target.y - s.y) / d * (s.r + target.r + 14);
+      }
+
+      const ease = activeEnemies ? 7.5 : 5.2;
+      s.x += (tx - s.x) * Math.min(1, ease * dt);
+      s.y += (ty - s.y) * Math.min(1, ease * dt);
+      s.x = clamp(s.x, 35, W - 35);
+      s.y = clamp(s.y, 46, H - 35);
+
+      if (!target || s.attackCd > 0) continue;
+
+      const d = Math.max(1, dist(s.x, s.y, target.x, target.y));
+      const dx = (target.x - s.x) / d;
+      const dy = (target.y - s.y) / d;
+
+      if (s.type === "archer" || s.type === "mage") {
+        const speed = s.type === "mage" ? 350 : 440;
+        projectiles.push({
+          owner: "shadow",
+          x: s.x + dx * 15,
+          y: s.y + dy * 15,
+          vx: dx * speed,
+          vy: dy * speed,
+          r: s.type === "mage" ? 10 : 8,
+          dmg: Math.round(player.atk * player.shadowDmg * (s.type === "mage" ? .88 : .72)),
+          life: 1.2,
+          pierce: 0,
+          color: s.type === "mage" ? "#8cf4ff" : "#b78cff",
+          kind: s.type === "mage" ? "shadowSlow" : "shadowArrow"
+        });
+        s.attackCd = s.type === "mage" ? 1.05 : .78;
+      } else if (d < 82 + target.r) {
+        hitEnemy(target, Math.round(player.atk * player.shadowDmg * (s.type === "guardian" ? .95 : .78)), dx, dy, false);
+        createSlashVisual(s.x + dx * 18, s.y + dy * 18, dx, dy, "#b78cff");
+        s.attackCd = s.type === "assassin" ? .45 : .72;
+      }
+    }
+  }
+
+  function nearestEnemyFrom(x, y, max = Infinity) {
+    let best = null;
+    let bd = max;
+    for (const e of enemies) {
+      const d = dist(x, y, e.x, e.y);
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+
+  function createSlashVisual(x, y, dx, dy, color) {
+    particles.push({
+      x, y,
+      vx: dx * 22,
+      vy: dy * 22,
+      r: 0,
+      life: .18,
+      maxLife: .18,
+      color,
+      text: null,
+      slash: { dx, dy }
+    });
+  }
+
+  function updateEnemies(dt) {
+    const maxEnemies = player.floor % 5 === 0 ? 12 : 15;
+
+    for (const e of enemies) {
+      e.hit = Math.max(0, e.hit - dt);
+      e.angry = Math.max(0, (e.angry || 0) - dt);
+      e.shootCd -= dt;
+      e.dashCd -= dt;
+      e.summonCd -= dt;
+      e.aoeCd -= dt;
+      e.attackTouchCd = Math.max(0, (e.attackTouchCd || 0) - dt);
+
+      const d = Math.max(1, dist(e.x, e.y, player.x, player.y));
+      let dx = (player.x - e.x) / d;
+      let dy = (player.y - e.y) / d;
+
+      if (e.type === "archer" || e.type === "mage" || e.type === "necro") {
+        const ideal = e.type === "mage" ? 230 : e.type === "necro" ? 255 : 205;
+        if (d > ideal + 35) {
+          e.x += dx * e.speed * dt;
+          e.y += dy * e.speed * dt;
+        } else if (d < ideal - 55) {
+          e.x -= dx * e.speed * .70 * dt;
+          e.y -= dy * e.speed * .70 * dt;
+        } else {
+          e.x += Math.sin(player.aura * 2 + e.x) * 14 * dt;
+          e.y += Math.cos(player.aura * 2 + e.y) * 14 * dt;
+        }
+
+        if (e.shootCd <= 0) {
+          e.shootCd = e.type === "mage" ? 1.15 : e.type === "necro" ? 1.45 : 1.05;
+          const kind = e.type === "mage" ? "slow" : "arrow";
+          enemyShoot(e, dx, dy, e.type === "mage" ? 255 : 280, kind);
+        }
+
+        if (e.type === "necro" && e.summonCd <= 0 && enemies.length < maxEnemies) {
+          e.summonCd = 3.6;
+          spawnEnemy("minion", e.x, e.y);
+          createZone(e.x, e.y, 38, 0, "#b78cff", .25, "summon", 0);
+          setMessage("Invocador ergueu um servo!", .8);
+        }
+      } else if (e.type === "assassin") {
+        if (e.dashCd <= 0 && d < 270) {
+          e.x += dx * 132;
+          e.y += dy * 132;
+          e.dashCd = 1.55;
+          burst(e.x, e.y, "#e2e5ff", 12);
+        } else if (d > e.r + player.r + 10) {
+          e.x += dx * e.speed * dt;
+          e.y += dy * e.speed * dt;
+        }
+      } else if (e.type === "boss") {
+        bossAI(e, d, dx, dy, dt, maxEnemies);
+      } else {
+        if (d > e.r + player.r + 9) {
+          const speedBoost = e.type === "exploder" && e.hp < e.maxHp * .4 ? 1.35 : 1;
+          e.x += dx * e.speed * speedBoost * dt;
+          e.y += dy * e.speed * speedBoost * dt;
+        }
+      }
+
+      e.x = clamp(e.x, 48, W - 48);
+      e.y = clamp(e.y, 56, H - 42);
+
+      if (d < e.r + player.r + 8 && e.attackTouchCd <= 0) {
+        if (e.type === "exploder") {
+          e.hp = 0;
+          createZone(e.x, e.y, 72, .05, "#ff5874", .38, "boom", e.atk + 8);
+          cleanupDead();
+        } else {
+          hurtPlayer(e.atk);
+          e.attackTouchCd = .62;
+          player.x += dx * 18;
+          player.y += dy * 18;
+        }
+      }
+    }
+  }
+
+  function bossAI(e, d, dx, dy, dt, maxEnemies) {
+    const ideal = 200;
+    if (d > ideal + 45) {
+      e.x += dx * e.speed * dt;
+      e.y += dy * e.speed * dt;
+    } else if (d < ideal - 65) {
+      e.x -= dx * e.speed * .62 * dt;
+      e.y -= dy * e.speed * .62 * dt;
+    }
+
+    if (e.shootCd <= 0) {
+      e.shootCd = Math.max(.62, 1.05 - player.floor * .012);
+      const spread = .24;
+      const angle = Math.atan2(dy, dx);
+      for (let i = -1; i <= 1; i++) {
+        const a = angle + i * spread;
+        enemyShoot(e, Math.cos(a), Math.sin(a), 305, "boss");
+      }
+    }
+
+    if (e.aoeCd <= 0) {
+      e.aoeCd = 3.4;
+      createZone(player.x, player.y, 72, .75, e.color, .32, "warning", e.atk + 8);
+      setMessage("Boss marcou uma área no chão!", .9);
+    }
+
+    if (e.summonCd <= 0 && enemies.length < maxEnemies) {
+      e.summonCd = 4.2;
+      spawnEnemy("minion", e.x, e.y);
+      if (player.floor >= 10) spawnEnemy("minion", e.x, e.y);
+    }
+
+    if (e.dashCd <= 0 && d < 260) {
+      e.dashCd = 2.8;
+      e.x += dx * 86;
+      e.y += dy * 86;
+      shake = Math.max(shake, 5);
+      burst(e.x, e.y, e.color, 18);
+    }
+  }
+
+  function enemyShoot(e, dx, dy, speed, kind) {
+    projectiles.push({
+      owner:"enemy",
+      x:e.x + dx * (e.r + 6),
+      y:e.y + dy * (e.r + 6),
+      vx:dx * speed,
+      vy:dy * speed,
+      r:kind === "boss" ? 10 : kind === "slow" ? 11 : 8,
+      dmg:e.atk,
+      life:2.45,
+      color: kind === "slow" ? "#8cf4ff" : e.color,
+      kind
+    });
+  }
+
+  function createZone(x, y, r, delay, color, life, kind, dmg) {
+    zones.push({ x, y, r, delay, life, maxLife: life, color, kind, dmg, done:false });
+  }
+
+  function updateZones(dt) {
+    for (let i = zones.length - 1; i >= 0; i--) {
+      const z = zones[i];
+      z.delay -= dt;
+      if (z.delay <= 0) {
+        z.life -= dt;
+        if (!z.done && (z.kind === "boom" || z.kind === "warning")) {
+          if (dist(z.x, z.y, player.x, player.y) < z.r + player.r) hurtPlayer(z.dmg, z.kind === "warning" ? "slow" : null);
+          z.done = true;
+          burst(z.x, z.y, z.color, 22);
+          shake = Math.max(shake, 6);
+        }
+      }
+      if (z.delay <= 0 && z.life <= 0) zones.splice(i, 1);
+    }
+  }
+
+  function updateProjectiles(dt) {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+      const p = projectiles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+
+      if (p.owner === "enemy") {
+        if (dist(p.x, p.y, player.x, player.y) < p.r + player.r) {
+          hurtPlayer(p.dmg, p.kind === "slow" ? "slow" : null);
+          burst(p.x, p.y, p.color, 10);
+          projectiles.splice(i, 1);
+          continue;
+        }
+      } else {
+        let hit = false;
+        for (const e of enemies) {
+          if (dist(p.x, p.y, e.x, e.y) < p.r + e.r) {
+            const d = Math.max(1, dist(p.x, p.y, e.x, e.y));
+            hitEnemy(e, p.dmg, (e.x - p.x) / d, (e.y - p.y) / d, p.owner === "player");
+            if (p.kind === "shadowSlow") e.speed *= .985;
+            if (p.pierce && p.pierce > 0) {
+              p.pierce--;
+            } else {
+              hit = true;
+            }
+            break;
+          }
+        }
+        if (hit) {
+          projectiles.splice(i, 1);
+          continue;
+        }
+      }
+
+      if (p.life <= 0 || p.x < -60 || p.y < -60 || p.x > W + 60 || p.y > H + 60) {
+        projectiles.splice(i, 1);
+      }
+    }
+  }
+
+  function updatePickups(dt) {
+    for (let i = pickups.length - 1; i >= 0; i--) {
+      const p = pickups[i];
+      p.life -= dt;
+      p.pulse += dt * 7;
+      if (dist(p.x, p.y, player.x, player.y) < p.r + player.r + 12) {
+        if (p.type === "potion") {
+          player.potion += 1;
+          floatingText(player.x, player.y - 22, "+poção", "#73ff9c");
+          burst(player.x, player.y, "#73ff9c", 12);
+        }
+        pickups.splice(i, 1);
+        continue;
+      }
+      if (p.life <= 0) pickups.splice(i, 1);
+    }
+  }
+
+  function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= Math.pow(.05, dt);
+      p.vy *= Math.pow(.05, dt);
+      p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  function update(dt) {
+    if (!running || paused) return;
+
+    messageTimer -= dt;
+    if (messageTimer <= 0) {
+      ui.toast.textContent = safe ? "Andar limpo: use LOJA ou entre no portal." : "PC: SPACE dash · clique esquerdo ataca · sombras ajudam sozinhas.";
+    }
+
+    if (slash) {
+      slash.life -= dt;
+      if (slash.life <= 0) slash = null;
+    }
+
+    if (portal) portal.pulse += dt * 5;
+    if (merchant) merchant.pulse += dt * 4;
+
+    updatePlayer(dt);
+    updateShadows(dt);
+    updateEnemies(dt);
+    updateProjectiles(dt);
+    updateZones(dt);
+    updatePickups(dt);
+    updateParticles(dt);
+
+    shake = Math.max(0, shake - 24 * dt);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.scale(scale, scale);
+
+    if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+
+    drawBackground();
+    drawZones();
+    drawPortalAndMerchant();
+    drawPickups();
+    drawParticles(false);
+    drawProjectiles();
+    drawShadows();
+    drawEnemies();
+    drawPlayer();
+    drawMouseReticle();
+    drawParticles(true);
+
+    ctx.restore();
+
+    updateHud();
+    requestAnimationFrame(loop);
+  }
+
+  function drawBackground() {
+    const b = biome();
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, b.bg1);
+    g.addColorStop(1, b.bg2);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = b.floor;
+    roundRect(42, 46, W - 84, H - 84, 25);
+    ctx.fill();
+
+    ctx.strokeStyle = b.grid;
+    ctx.lineWidth = 1;
+    for (let x = 74; x < W - 60; x += 42) line(x, 62, x, H - 54);
+    for (let y = 74; y < H - 60; y += 42) line(58, y, W - 58, y);
+
+    drawDecor();
+
+    const vignette = ctx.createRadialGradient(W/2, H/2, 80, W/2, H/2, W*.65);
+    vignette.addColorStop(0, "rgba(0,0,0,0)");
+    vignette.addColorStop(1, "rgba(0,0,0,.28)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "rgba(255,255,255,.07)";
+    ctx.font = "900 38px system-ui";
+    ctx.textAlign = "right";
+    ctx.fillText(b.icon, W - 72, 94);
+
+    ctx.font = "900 11px system-ui";
+    ctx.fillStyle = "rgba(255,255,255,.28)";
+    ctx.textAlign = "left";
+    ctx.fillText("TORRE DIMENSIONAL", 62, H - 58);
+  }
+
+  function drawDecor() {
+    const b = biome();
+    for (const d of decor) {
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.a);
+      ctx.globalAlpha = .30;
+      if (b.deco === "tree") {
+        ctx.fillStyle = "#0b2c1d";
+        circle(0, 0, d.r);
+        ctx.fillStyle = "#76ff9b";
+        circle(-d.r*.2, -d.r*.2, d.r*.45);
+      } else if (b.deco === "rock") {
+        ctx.fillStyle = "#d8a456";
+        ctx.beginPath();
+        ctx.moveTo(-d.r, d.r*.4);
+        ctx.lineTo(-d.r*.2, -d.r);
+        ctx.lineTo(d.r, -d.r*.15);
+        ctx.lineTo(d.r*.55, d.r);
+        ctx.closePath();
+        ctx.fill();
+      } else if (b.deco === "ice") {
+        ctx.fillStyle = "#b8f2ff";
+        ctx.beginPath();
+        ctx.moveTo(0, -d.r);
+        ctx.lineTo(d.r*.55, d.r);
+        ctx.lineTo(-d.r*.55, d.r);
+        ctx.closePath();
+        ctx.fill();
+      } else if (b.deco === "lava") {
+        ctx.fillStyle = "#ff5874";
+        roundRect(-d.r, -d.r*.35, d.r*2, d.r*.7, 12);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = "#d9c7ff";
+        circle(0, 0, d.r*.35);
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawPlayer() {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+
+    const pulse = 1 + Math.sin(player.aura * 8) * .06;
+    ctx.globalAlpha = .18;
+    ctx.fillStyle = "#69a9ff";
+    circle(0, 0, (player.r + 15) * pulse);
+    ctx.globalAlpha = 1;
+
+    if (player.invuln > 0) ctx.globalAlpha = .62 + Math.sin(player.aura * 42) * .22;
+
+    ctx.fillStyle = "#101827";
+    circle(0, 0, player.r + 5);
+
+    ctx.fillStyle = "#69a9ff";
+    circle(0, 0, player.r);
+
+    const ang = Math.atan2(player.facingY, player.facingX);
+    ctx.rotate(ang);
+    ctx.fillStyle = "#fff";
+    circle(5, -5, 3);
+    circle(5, 5, 3);
+    ctx.fillStyle = "#ffd36b";
+    ctx.fillRect(-5, -13, 24, 4);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = .20;
+    ctx.strokeStyle = "#69a9ff";
+    ctx.lineWidth = 2;
+    circle(player.x, player.y, player.attackRange, true);
+    ctx.restore();
+
+    if (slash) {
+      drawSlash(slash.x, slash.y, slash.dx, slash.dy, "#ffffff", "#ffd36b", slash.life / slash.max);
+    }
+  }
+
+  function drawShadows() {
+    for (const s of shadows) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+
+      const pulse = 1 + Math.sin(s.pulse * 7) * .07;
+      ctx.globalAlpha = .22;
+      ctx.fillStyle = "#b78cff";
+      circle(0, 0, (s.r + 14) * pulse);
+      ctx.globalAlpha = .92;
+
+      ctx.fillStyle = s.type === "guardian" ? "#3a2764" : "#21133d";
+      if (s.type === "archer") {
+        ctx.beginPath();
+        ctx.moveTo(0, -s.r);
+        ctx.lineTo(s.r, s.r);
+        ctx.lineTo(-s.r, s.r);
+        ctx.closePath();
+        ctx.fill();
+      } else if (s.type === "mage") {
+        circle(0, 0, s.r);
+        ctx.strokeStyle = "#8cf4ff";
+        ctx.lineWidth = 2;
+        circle(0, 0, s.r + 5, true);
+      } else {
+        circle(0, 0, s.r);
+      }
+
+      ctx.fillStyle = "#d8c8ff";
+      circle(-3, -2, 2);
+      circle(3, -2, 2);
+      ctx.restore();
+    }
+  }
+
+  function drawEnemies() {
+    for (const e of enemies) {
+      ctx.save();
+      ctx.translate(e.x, e.y);
+
+      ctx.globalAlpha = .22 + (e.angry > 0 ? .12 : 0);
+      ctx.fillStyle = e.color;
+      circle(0, 0, e.r * (e.hit > 0 ? 1.9 : 1.55));
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = e.hit > 0 ? "#fff" : e.color;
+
+      if (e.type === "archer") {
+        ctx.beginPath();
+        ctx.moveTo(0, -e.r);
+        ctx.lineTo(e.r, e.r);
+        ctx.lineTo(-e.r, e.r);
+        ctx.closePath();
+        ctx.fill();
+      } else if (e.type === "mage" || e.type === "necro") {
+        circle(0, 0, e.r);
+        ctx.strokeStyle = e.type === "necro" ? "#b78cff" : "#8cf4ff";
+        ctx.lineWidth = 3;
+        circle(0, 0, e.r + 6, true);
+      } else if (e.type === "assassin") {
+        ctx.beginPath();
+        ctx.moveTo(0, -e.r);
+        ctx.lineTo(e.r*.72, 0);
+        ctx.lineTo(0, e.r);
+        ctx.lineTo(-e.r*.72, 0);
+        ctx.closePath();
+        ctx.fill();
+      } else if (e.type === "exploder") {
+        circle(0, 0, e.r);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-e.r*.45, -e.r*.45);
+        ctx.lineTo(e.r*.45, e.r*.45);
+        ctx.moveTo(e.r*.45, -e.r*.45);
+        ctx.lineTo(-e.r*.45, e.r*.45);
+        ctx.stroke();
+      } else {
+        circle(0, 0, e.r * (e.hit > 0 ? 1.11 : 1));
+      }
+
+      ctx.fillStyle = "rgba(0,0,0,.45)";
+      circle(-e.r * .30, -e.r * .13, Math.max(2, e.r * .13));
+      circle(e.r * .30, -e.r * .13, Math.max(2, e.r * .13));
+
+      if (e.isElite && !e.isBoss) {
+        ctx.strokeStyle = "#ffd36b";
+        ctx.lineWidth = 3;
+        circle(0, 0, e.r + 6, true);
+      }
+
+      if (e.isBoss) {
+        ctx.strokeStyle = "#ffd36b";
+        ctx.lineWidth = 4;
+        circle(0, 0, e.r + 10, true);
+        ctx.fillStyle = "#ffd36b";
+        ctx.font = "900 12px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText("BOSS", 0, -e.r - 20);
+      }
+
+      ctx.restore();
+
+      const bw = e.isBoss ? 112 : e.isElite ? 66 : 48;
+      const pct = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = "rgba(0,0,0,.50)";
+      roundRect(e.x - bw/2, e.y - e.r - 17, bw, 6, 99);
+      ctx.fill();
+      ctx.fillStyle = e.isBoss ? "#ffd36b" : e.isElite ? "#ffd36b" : "#ff5874";
+      roundRect(e.x - bw/2, e.y - e.r - 17, bw * pct, 6, 99);
+      ctx.fill();
+
+      if (e.isBoss) {
+        ctx.font = "900 11px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(255,255,255,.82)";
+        ctx.fillText(e.name, e.x, e.y - e.r - 26);
+      }
+    }
+  }
+
+  function drawProjectiles() {
+    for (const p of projectiles) {
+      ctx.globalAlpha = .22;
+      ctx.fillStyle = p.color;
+      circle(p.x, p.y, p.r * 2.5);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = p.color;
+      if (p.kind === "slash") {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.atan2(p.vy, p.vx));
+        roundRect(-p.r, -p.r*.45, p.r*2.2, p.r*.9, 99);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        circle(p.x, p.y, p.r);
+      }
+    }
+  }
+
+  function drawZones() {
+    for (const z of zones) {
+      ctx.save();
+      const warning = z.delay > 0;
+      ctx.globalAlpha = warning ? .18 + Math.sin(player.aura * 12) * .06 : Math.max(.05, z.life / z.maxLife * .24);
+      ctx.fillStyle = z.color;
+      circle(z.x, z.y, z.r);
+      ctx.globalAlpha = warning ? .70 : .35;
+      ctx.strokeStyle = z.color;
+      ctx.lineWidth = warning ? 3 : 8;
+      circle(z.x, z.y, z.r, true);
+      ctx.restore();
+    }
+  }
+
+  function drawPortalAndMerchant() {
+    if (portal) {
+      const s = Math.sin(portal.pulse) * 5;
+      ctx.save();
+      ctx.translate(portal.x, portal.y);
+      ctx.globalAlpha = .25;
+      ctx.fillStyle = "#b78cff";
+      circle(0, 0, portal.r + 25 + s);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 4;
+      circle(0, 0, portal.r + s, true);
+      ctx.strokeStyle = "#ffd36b";
+      ctx.lineWidth = 2;
+      circle(0, 0, portal.r + 11 - s * .4, true);
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("SUBIR", 0, 4);
+      ctx.restore();
+    }
+
+    if (merchant) {
+      ctx.save();
+      ctx.translate(merchant.x, merchant.y);
+      ctx.globalAlpha = .22;
+      ctx.fillStyle = "#ffd36b";
+      circle(0, 0, merchant.r + 18 + Math.sin(merchant.pulse) * 3);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#3b270f";
+      circle(0, 0, merchant.r);
+      ctx.fillStyle = "#ffd36b";
+      circle(0, -5, 10);
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 18px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("🛒", 0, 8);
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 11px system-ui";
+      ctx.fillText("LOJA", 0, -merchant.r - 10);
+      ctx.restore();
+    }
+  }
+
+  function drawPickups() {
+    for (const p of pickups) {
+      ctx.globalAlpha = .25;
+      ctx.fillStyle = "#73ff9c";
+      circle(p.x, p.y, p.r + 10 + Math.sin(p.pulse) * 2);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#73ff9c";
+      circle(p.x, p.y, p.r);
+      ctx.fillStyle = "#06351a";
+      ctx.font = "900 12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("+", p.x, p.y + 4);
+    }
+  }
+
+  function drawMouseReticle() {
+    if (!mouse.inside || innerWidth < 820 || paused) return;
+    ctx.save();
+    ctx.translate(mouse.x, mouse.y);
+    ctx.globalAlpha = .72;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    circle(0, 0, 12, true);
+    line(-18, 0, -8, 0);
+    line(8, 0, 18, 0);
+    line(0, -18, 0, -8);
+    line(0, 8, 0, 18);
+    ctx.restore();
+  }
+
+  function drawParticles(textOnly) {
+    for (const p of particles) {
+      if (!!p.text !== textOnly) continue;
+      const a = Math.max(0, p.life / p.maxLife);
+      ctx.globalAlpha = a;
+
+      if (p.text) {
+        ctx.font = "900 18px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.text, p.x, p.y);
+      } else if (p.slash) {
+        drawSlash(p.x, p.y, p.slash.dx, p.slash.dy, p.color, p.color, a);
+      } else {
+        ctx.fillStyle = p.color;
+        circle(p.x, p.y, p.r);
+      }
+
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawSlash(x, y, dx, dy, c1, c2, alpha) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = c1;
+    ctx.lineWidth = 8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(0, 0, 50, -0.65, 0.65);
+    ctx.stroke();
+    ctx.strokeStyle = c2;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 61, -0.55, 0.55);
+    ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function updateHud() {
+    ui.hpFill.style.width = `${Math.max(0, player.hp / player.maxHp * 100)}%`;
+    ui.manaFill.style.width = `${Math.max(0, player.mana / player.maxMana * 100)}%`;
+    ui.xpFill.style.width = `${Math.max(0, player.xp / player.nextXp * 100)}%`;
+
+    const b = biome();
+    ui.heroLabel.textContent = `Caçador Rank ${player.rank} · Sombras ${shadows.length}/${player.shadowSlots}`;
+    ui.floorLabel.textContent = `Andar ${player.floor}`;
+    ui.biomeLabel.textContent = `${b.icon} ${b.name} | HP ${Math.ceil(player.hp)}/${player.maxHp} | Mana ${Math.ceil(player.mana)}/${player.maxMana} | Poções ${player.potion}`;
+    ui.levelLabel.textContent = `Lv. ${player.level}`;
+    ui.goldLabel.textContent = `${player.gold} ouro`;
+    ui.essenceLabel.textContent = `${player.essence} essência`;
+    ui.enemyLabel.textContent = safe ? "andar limpo" : `${enemies.length} inimigos`;
+    ui.statLabel.textContent = `ATK ${player.atk} DEF ${player.armor}`;
+
+    ui.attackBtn.textContent = player.attackCd > 0 ? "..." : "ATACAR";
+    ui.dashBtn.textContent = player.dashCd > 0 ? "CD" : "DASH";
+    ui.potionBtn.textContent = `POT ${player.potion}`;
+    ui.attackBtn.style.opacity = player.attackCd > 0 ? .72 : 1;
+    ui.dashBtn.style.opacity = player.dashCd > 0 ? .62 : 1;
+    ui.potionBtn.style.opacity = player.potion <= 0 ? .62 : 1;
+  }
+
+  function openShop() {
+    if (!running) return;
+    paused = true;
+    ui.shopModal.style.display = "grid";
+    renderShop();
+  }
+
+  function closeShop() {
+    ui.shopModal.style.display = "none";
+    paused = false;
+  }
+
+  function renderShop() {
+    ui.shopInfo.textContent = `Ouro: ${player.gold} | Essência: ${player.essence} | Andar ${player.floor} | Sombras ${shadows.length}/${player.shadowSlots}`;
+    ui.shopGrid.innerHTML = "";
+
+    for (const item of shopItems) {
+      const cost = item.cost();
+      const essenceCost = item.essence();
+      const locked = false;
+      const canBuy = !locked && player.gold >= cost && player.essence >= essenceCost;
+      const btn = document.createElement("button");
+      btn.className = "shopItem";
+      btn.disabled = !canBuy;
+      btn.innerHTML = `<b>${item.name}</b><span>${item.desc}</span><em>${cost} ouro${essenceCost ? " · " + essenceCost + " essência" : ""}</em>`;
+      btn.addEventListener("click", () => {
+        if (!canBuy) {
+          setMessage("Recursos insuficientes.", .9);
+          return;
+        }
+        player.gold -= cost;
+        player.essence -= essenceCost;
+        item.buy();
+        setMessage(`Comprou: ${item.name}`, 1.1);
+        renderShop();
+      });
+      ui.shopGrid.appendChild(btn);
+    }
+
+    ui.nextFloorBtn.style.display = safe ? "block" : "none";
+  }
+
+  function openBlessing() {
+    paused = true;
+    ui.blessingModal.style.display = "grid";
+    ui.choiceGrid.innerHTML = "";
+    const picks = [...blessingPool].sort(() => Math.random() - .5).slice(0, 3);
+
+    for (const item of picks) {
+      const btn = document.createElement("button");
+      btn.className = "choiceItem";
+      btn.innerHTML = `<b>${item.name}</b><span>${item.desc}</span>`;
+      btn.addEventListener("click", () => {
+        item.apply();
+        setMessage(`Bênção escolhida: ${item.name}`, 1.1);
+        nextFloor();
+      });
+      ui.choiceGrid.appendChild(btn);
+    }
+  }
+
+  function inputVector() {
+    let x = joy.x;
+    let y = joy.y;
+
+    if (keys.ArrowLeft || keys.KeyA) x -= 1;
+    if (keys.ArrowRight || keys.KeyD) x += 1;
+    if (keys.ArrowUp || keys.KeyW) y -= 1;
+    if (keys.ArrowDown || keys.KeyS) y += 1;
+
+    const len = Math.hypot(x, y);
+    if (len > 1) {
+      x /= len;
+      y /= len;
+    }
+
+    return { x, y, mag: Math.min(1, len) };
+  }
+
+  function bindJoystick() {
+    const base = document.getElementById("joyBase");
+    const knob = document.getElementById("joyKnob");
+    let active = false;
+    let pid = null;
+
+    function setFromEvent(e) {
+      const r = base.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      let dx = e.clientX - cx;
+      let dy = e.clientY - cy;
+      const max = r.width * .36;
+      const len = Math.hypot(dx, dy);
+      if (len > max) {
+        dx = dx / len * max;
+        dy = dy / len * max;
+      }
+      joy.x = dx / max;
+      joy.y = dy / max;
+      joy.mag = Math.min(1, len / max);
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    }
+
+    function reset() {
+      active = false;
+      pid = null;
+      joy.x = 0;
+      joy.y = 0;
+      joy.mag = 0;
+      knob.style.transform = "translate(0,0)";
+    }
+
+    base.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      active = true;
+      pid = e.pointerId;
+      base.setPointerCapture(pid);
+      setFromEvent(e);
+    });
+
+    base.addEventListener("pointermove", e => {
+      if (!active || e.pointerId !== pid) return;
+      e.preventDefault();
+      setFromEvent(e);
+    });
+
+    base.addEventListener("pointerup", e => {
+      if (e.pointerId === pid) reset();
+    });
+
+    base.addEventListener("pointercancel", reset);
+    base.addEventListener("lostpointercapture", reset);
+  }
+
+  function clientToWorld(e) {
+    return {
+      x: clamp((e.clientX * dpr - ox) / scale, 0, W),
+      y: clamp((e.clientY * dpr - oy) / scale, 0, H)
+    };
+  }
+
+  function burst(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 50 + Math.random() * 190;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        r: 2 + Math.random() * 4,
+        life: .35 + Math.random() * .35,
+        maxLife: .7,
+        color,
+        text: null
+      });
+    }
+  }
+
+  function floatingText(x, y, text, color) {
+    particles.push({
+      x, y,
+      vx: 0,
+      vy: -42,
+      r: 0,
+      life: .75,
+      maxLife: .75,
+      color,
+      text
+    });
+  }
+
+  function loop(t) {
+    const dt = Math.min(.033, (t - last) / 1000 || 0);
+    last = t;
+    update(dt);
+    draw();
+  }
+
+  function dist(x1, y1, x2, y2) {
+    return Math.hypot(x1 - x2, y1 - y2);
+  }
+
+  function clamp(n, a, b) {
+    return Math.max(a, Math.min(b, n));
+  }
+
+  function rand(a, b) {
+    return a + Math.random() * (b - a);
+  }
+
+  function randInt(a, b) {
+    return Math.floor(a + Math.random() * (b - a + 1));
+  }
+
+  function circle(x, y, r, stroke = false) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    stroke ? ctx.stroke() : ctx.fill();
+  }
+
+  function line(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  bindJoystick();
+
+  try {
+    const best = Number(localStorage.getItem("towerBestFloorV3") || "1");
+    if (best > 1) player.bestFloor = best;
+  } catch (e) {}
+
+  ui.startScreen.querySelector("#startBtn").addEventListener("click", () => {
+    ui.startScreen.style.display = "none";
+    running = true;
+    resetRun();
+  });
+
+  ui.attackBtn.addEventListener("pointerdown", e => { e.preventDefault(); attackAt(); });
+  ui.dashBtn.addEventListener("pointerdown", e => { e.preventDefault(); dash(); });
+  ui.potionBtn.addEventListener("pointerdown", e => { e.preventDefault(); usePotion(); });
+  ui.shopBtn.addEventListener("pointerdown", e => { e.preventDefault(); openShop(); });
+  document.getElementById("closeShopBtn").addEventListener("click", closeShop);
+  ui.nextFloorBtn.addEventListener("click", () => { if (safe) enterPortal(); });
+
+  canvas.addEventListener("pointermove", e => {
+    const p = clientToWorld(e);
+    mouse.x = p.x;
+    mouse.y = p.y;
+    mouse.inside = true;
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    mouse.inside = false;
+  });
+
+  canvas.addEventListener("pointerdown", e => {
+    if (!running || paused) return;
+    const p = clientToWorld(e);
+    mouse.x = p.x;
+    mouse.y = p.y;
+    mouse.inside = true;
+
+    if (e.button === 0) {
+      e.preventDefault();
+      attackAt(p.x, p.y);
+    } else if (e.button === 2) {
+      e.preventDefault();
+      dash();
+    }
+  });
+
+  addEventListener("keydown", e => {
+    keys[e.code] = true;
+
+    if (e.code === "Space") {
+      e.preventDefault();
+      dash();
+    }
+    if (e.code === "Enter" || e.code === "KeyJ") attackAt();
+    if (e.code === "ShiftLeft" || e.code === "ShiftRight") dash();
+    if (e.code === "KeyP") usePotion();
+    if (e.code === "KeyL" || e.code === "KeyM") openShop();
+    if (e.code === "Escape") {
+      if (ui.shopModal.style.display === "grid") closeShop();
+    }
+  });
+
+  addEventListener("keyup", e => {
+    keys[e.code] = false;
+  });
+
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    });
+  }
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
